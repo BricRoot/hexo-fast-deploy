@@ -13,8 +13,29 @@ cd /d %scriptDir%
 :: 检查是否存在 Git 仓库
 git rev-parse --is-inside-work-tree >nul 2>&1
 if %errorlevel% neq 0 (
-    echo 脚本目录没有Git仓库，请确保您在Git仓库目录下运行此脚本。
-    exit /b
+    echo 脚本目录没有Git仓库，将初始化Git仓库并使用_config.yml中的仓库
+    
+    :: 获取 _config.yml 中的 repo 配置
+    for /f "delims=" %%i in ('findstr /i "repo" _config.yml') do set repo=%%i
+    
+    if not defined repo (
+        echo 无法从_config.yml获取仓库信息，请检查_config.yml中是否包含repo配置
+        exit /b
+    )
+    
+    set repo=%repo:*: =%
+    echo 使用_config.yml中的仓库地址%repo%
+    
+    :: 初始化 Git 仓库
+    git init
+    git remote add origin %repo%
+    
+    :: 获取 _config.yml 中的 branch 配置
+    for /f "delims=" %%i in ('findstr /i "branch" _config.yml') do set branch=%%i
+    set branch=%branch:*: =%
+    
+    :: 创建并切换到指定分支
+    git checkout -b %branch%
 )
 
 :: hexo工作流
@@ -28,10 +49,10 @@ call hexo g
 
 cls
 if exist "gulpfile.js" (
-    echo 找到 gulpfile.js，开始压缩html，js，css
+    echo 找到gulpfile.js，开始压缩html，js，css
     call gulp
 ) else (
-    echo 没有找到 gulpfile.js，跳过压缩步骤
+    echo 没有找到gulpfile.js，跳过压缩步骤
     timeout /t 2 /nobreak >nul
 )
 
@@ -42,11 +63,13 @@ call hexo d
 :: hexo程序备份远程仓库工作流
 cls
 git fetch -p
+
 :: 获取_config.yml中的branch配置
 for /f "delims=" %%i in ('findstr /i "branch" _config.yml') do set branch=%%i
-:: 提取"branch"配置中的分支名称（去除多余的空格和冒号）
+
+:: 提取branch的分支名称（去除多余的空格和冒号）
 set branch=%branch:*: =%
-echo 开始检查仓库是否超过七个分支（除了%branch%）
+echo 开始检查仓库是否超过7个分支（除了%branch%）
 set count=0
 
 :: 计算远程分支数量，排除配置的branch
@@ -65,27 +88,27 @@ for /f "delims=" %%b in ('git branch -r --sort=committerdate ^| findstr /v "%bra
     set branches=!branches!!branch! 
 )
 
-:: 如果远程分支超过 7 个，则删除最久远的分支，保留 7 个（除了配置的branch）
-if %count% gtr 7 (
-    echo 远程分支超过 7 个，删除最久远的分支
+:: 如果远程分支超过6个，则删除最久远的分支，保留6个（除了配置的branch）
+if %count% gtr 6 (
+    echo 远程备份分支超过7个，删除最久远的分支
 
     :: 获取所有远程分支（按时间排序），排除配置的branch
     for /f "delims=" %%b in ('git branch -r --sort=committerdate ^| findstr /v "%branch%"') do (
         set branch=%%b
         set branch=!branch:origin/=!
         if /i not "!branch!"=="%branch%" (
-            echo 即将删除远程分支: !branch!
+            echo 即将删除远程备份分支: !branch!
             git push origin --delete !branch!
-            echo 远程分支 !branch! 已被删除
+            echo 远程备份分支!branch!已被删除
 
             :: 删除本地分支
-            echo 即将删除本地分支: !branch!
-            git branch -d !branch!
-            echo 本地分支 !branch! 已被删除
+            echo 即将删除本地备份分支: !branch!
+            git branch -D !branch!
+            echo 本地备份分支!branch!已被删除
              
-            :: 只保留 7 个分支，删除超过的
+            :: 只保留6个分支，删除超过的
             set /a count-=1
-            if !count! leq 7 (
+            if !count! leq 6 (
                 goto :doneDeleting
             )
         )
@@ -109,6 +132,7 @@ git commit -m "new files"
 :: 推送到 GitHub 仓库
 git push origin %timestamp%
 
+echo 已经完成部署和备份
+
 :: 切换回原本目录
 cd /d %currentDir%
-echo 已经完成部署和备份
