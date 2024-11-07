@@ -6,6 +6,10 @@ currentDir=$(pwd)
 # 获取脚本所在目录
 scriptDir=$(dirname "$0")
 
+# 提示脚本运行目录
+echo 运行目录位于：$scriptDir
+sleep 2
+
 # 切换到脚本目录
 cd "$scriptDir" || exit
 
@@ -23,6 +27,7 @@ fi
 git rev-parse --is-inside-work-tree > /dev/null 2>&1
 if [[ $? -ne 0 ]]; then
     echo "脚本目录没有Git仓库，将初始化Git仓库并使用_config.yml中的仓库"
+    sleep 2
     
     # 初始化Git仓库
     git init
