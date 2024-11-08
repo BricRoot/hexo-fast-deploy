@@ -50,7 +50,7 @@ echo "开始清理缓存"
 hexo cl
 if [[ $? -ne 0 ]]; then
     echo "清理缓存失败"
-    exit 1
+    exit 0
 fi
 
 clear
@@ -58,7 +58,7 @@ echo "开始生成静态文件"
 hexo g
 if [[ $? -ne 0 ]]; then
     echo "生成静态文件失败"
-    exit 1
+    exit 0
 fi
 
 clear
@@ -79,7 +79,7 @@ echo "开始部署静态文件"
 hexo d
 if [[ $? -ne 0 ]]; then
     echo "部署静态文件失败"
-    exit 1
+    exit 0
 fi
 
 clear
@@ -92,7 +92,7 @@ if [[ $? -eq 0 ]]; then
     sleep 2
     clear
     echo "已完成Hexo源文件备份和部署"
-    exit 0  # 跳出脚本，避免继续执行
+    exit 0 
 else
     # 排除public文件夹的所有文件
     git add --all
@@ -112,7 +112,7 @@ else
     git commit -m "Backup Hexo Files"
     if [[ $? -ne 0 ]]; then
         echo "Git commit 操作失败"
-        exit 1
+        exit 0
     fi
 fi
 
@@ -123,14 +123,14 @@ timestamp=$(date +%Y%m%d%H%M)
 git tag "$timestamp"
 if [[ $? -ne 0 ]]; then
     echo "创建 Git 标签失败"
-    exit 1
+    exit 0
 fi
 
 # 推送标签到远程仓库
 git push origin "$timestamp"
 if [[ $? -ne 0 ]]; then
     echo "推送 Git 标签失败"
-    exit 1
+    exit 0
 fi
 
 clear
