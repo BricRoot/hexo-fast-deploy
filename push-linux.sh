@@ -7,19 +7,25 @@ currentDir=$(pwd)
 scriptDir=$(dirname "$0")
 
 # 提示脚本运行目录
-echo 运行目录位于：$scriptDir
+echo 脚本目录位于：$scriptDir
 sleep 2
 
 # 切换到脚本目录
 cd "$scriptDir" || exit
 
-# 获取_config.yml中的repo和branch配置
+# 获取 _config.yml 中的 repo 和 branch 配置
 repo=$(grep -i "repo" _config.yml | awk -F ': ' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//')
 branch=$(grep -i "branch" _config.yml | awk -F ': ' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//')
 
-# 检查repo和branch是否有效
-if [[ -z "$repo" || -z "$branch" ]]; then
-    echo "无法从_config.yml获取repo或branch配置，请检查配置"
+# 检查 repo 和 branch 的有效性
+if [[ -z "$repo" && -z "$branch" ]]; then
+    echo "无法从_config.yml获取仓库链接和分支配置，请检查是否正确配置_config.yml文件中的'repo'和'branch'字段"
+    exit 1
+elif [[ -z "$repo" ]]; then
+    echo "无法从_config.yml获取仓库链接，请检查是否正确配置_config.yml文件中的'repo'字段"
+    exit 1
+elif [[ -z "$branch" ]]; then
+    echo "无法从_config.yml获取分支，请检查是否正确配置_config.yml文件中的'branch'字段"
     exit 1
 fi
 
